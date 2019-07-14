@@ -3,7 +3,9 @@
 
 #include <iostream>
 #include <vector>
-#include "vecmath/vecmath.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "PerlinNoise.hpp"
 
@@ -11,45 +13,78 @@ class VectorFieldSystem
 {
 public:
 	unsigned int xLength, yLength, zLength;
-	std::vector<Vector3f> particles;
 
 	VectorFieldSystem(unsigned xLength, unsigned yLength, unsigned zLength) {
-		std::cerr << "Initializing vector field\n"
-			<< "xLength: " << this->xLength << std::endl
-			<< "yLength: " << this->yLength << std::endl
-			<< "zLength: " << this->zLength << std::endl;
-		
 		this->xLength = xLength;
 		this->yLength = yLength;
 		this->zLength = zLength;
 
+		std::cerr << "Initializing vector field\n"
+			<< "xLength: " << this->xLength << std::endl
+			<< "yLength: " << this->yLength << std::endl
+			<< "zLength: " << this->zLength << std::endl;
+
+		//Vector Field
 		for (int i = 0; i < xLength; i++) {
 			for (int j = 0; j < yLength; j++) {
 				for (int k = 0; k < zLength; k++) {
-					particles.push_back(Vector3f(i*+0.2, j*-0.2, k*-0.2));
+					vecPos.push_back(glm::vec3(i*+0.2, j*-0.2, k*-0.2));
+					vecVector.push_back(glm::vec3(0, 0, 0));
 				}
 			}
 		}
+		
+		//Particles
+		for (int i = 0; i < xLength; i++) {
+			for (int j = 0; j < yLength; j++) {
+				for (int k = 0; k < zLength; k++) {
+					m_vVecState.push_back(glm::vec3(i*+0.2, j*-0.2, k*-0.2));
+					m_vVecState.push_back(glm::vec3(0, 0, 0));
+				}
+			}
+		}
+
 		setupBuffers();
 		std::cerr << "Initialized\n";
 	}
 
-	std::vector<Vector3f> getState() {
-		return particles;
+	std::vector<glm::vec3> getState() {
+		return m_vVecState;
 	}
 
-	Vector3f evalF(Vector3f state) {
-		return Vector3f(0, 0, 0);
+	void setState(std::vector<glm::vec3> newState) {
+		m_vVecState = newState;
+	}
+
+	std::vector<glm::vec3> evalF(std::vector <glm::vec3> state) {
+		//calculate forces from velocity and acceleration
+		std::vector <glm::vec3> dX;
+		for (int i = 0; i < xLength; i++) {
+			for (int j = 0; j < yLength; j++) {
+				for (int k = 0; k < zLength; k++) {
+					dX.push_back(glm::vec3(-.2f, 0, 0));
+					dX.push_back(glm::vec3(0, 0, 0));
+				}
+			}
+		}
+
+		return dX;
 	}
 
 	void draw() {
 		//std::cerr << "Drawing vector field\n";
 		glUseProgram(shaderProgram);
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_POINTS, 0, particles.size());
+		glDrawArrays(GL_POINTS, 0, m_vVecState.size()/2);
 	}
 
 private:
+	//vector representations
+	std::vector<glm::vec3> vecPos;
+	std::vector<glm::vec3> vecVector;
+
+	//particle simulations
+	std::vector<glm::vec3> m_vVecState;
 
 	// shaders
 	const char *vertexShaderSource = "#version 330 core\n"
@@ -89,7 +124,7 @@ private:
 		glGenBuffers(1, &VBO);
 		glBindVertexArray(VAO);	// note that we bind to a different VAO now
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);	// and a different VBO
-		glBufferData(GL_ARRAY_BUFFER, particles.size() * sizeof(Vector3f), &particles[0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, m_vVecState.size() * sizeof(glm::vec3), &m_vVecState[0], GL_DYNAMIC_DRAW);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0); // because the vertex data is tightly packed we can also specify 0 as the vertex attribute's stride to let OpenGL figure it out
 		glEnableVertexAttribArray(0);
 	}
@@ -97,8 +132,8 @@ private:
 
 class VectorParticle {
 public:
-	Vector3f position;	//starting draw point of arrow- does not change
-	Vector3f vector;	
+	glm::vec3 position;	//starting draw point of arrow- does not change
+	glm::vec3 vector;
 	float magnitude;
-	VectorParticle(Vector3f position, Vector3f vector) : position(position), vector(vector) {}
+	VectorParticle(glm::vec3 position, glm::vec3 vector) : position(position), vector(vector) {}
 };

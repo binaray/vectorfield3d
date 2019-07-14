@@ -124,25 +124,11 @@
     <ClCompile Include="glad.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="TimeStepper.cpp" />
-    <ClCompile Include="vecmath\Matrix2f.cpp" />
-    <ClCompile Include="vecmath\Matrix3f.cpp" />
-    <ClCompile Include="vecmath\Matrix4f.cpp" />
-    <ClCompile Include="vecmath\Quat4f.cpp" />
-    <ClCompile Include="vecmath\Vector2f.cpp" />
-    <ClCompile Include="vecmath\Vector3f.cpp" />
-    <ClCompile Include="vecmath\Vector4f.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PerlinNoise.hpp" />
+    <ClInclude Include="Shader.hpp" />
     <ClInclude Include="TimeStepper.h" />
-    <ClInclude Include="vecmath\Matrix2f.h" />
-    <ClInclude Include="vecmath\Matrix3f.h" />
-    <ClInclude Include="vecmath\Matrix4f.h" />
-    <ClInclude Include="vecmath\Quat4f.h" />
-    <ClInclude Include="vecmath\vecmath.h" />
-    <ClInclude Include="vecmath\Vector2f.h" />
-    <ClInclude Include="vecmath\Vector3f.h" />
-    <ClInclude Include="vecmath\Vector4f.h" />
     <ClInclude Include="VectorFieldSystem.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

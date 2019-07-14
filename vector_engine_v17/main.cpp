@@ -16,11 +16,17 @@ const unsigned int SCR_HEIGHT = 600;
 VectorFieldSystem *vectorFieldSystem;
 TimeStepper *timeStepper;
 const float step = 0.04f;
+const float timer = 0.04f;
 
 //setup shaders, buffers, meshes here
 void setupSystems() {
-	//timeStepper = new TimeStepper();
+	timeStepper = new TimeStepper();
 	vectorFieldSystem = new VectorFieldSystem(5, 5, 5);
+}
+
+//update logic here
+void timerFunction() {
+	timeStepper->takeStep(vectorFieldSystem, step);
 }
 
 //draw code here
@@ -60,18 +66,31 @@ int main()
 
 	setupSystems();
 
+	float time = timer;
+	float previous = glfwGetTime();
 	// render loop
 	while (!glfwWindowShouldClose(window))
 	{
+		float now = glfwGetTime();
+		float delta = now - previous;
+		previous = now;
+
 		// input
 		processInput(window);
+
+		// for each timer do this
+		time -= delta;
+		if (time <= 0.f)
+		{
+			//std::cerr << "update";
+			timerFunction();
+			time = timer;
+		}
 
 		// render
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-
 		draw();
-
 		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
 		glfwSwapBuffers(window);
 		glfwPollEvents();
