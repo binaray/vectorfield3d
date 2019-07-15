@@ -12,6 +12,9 @@
 class VectorFieldSystem
 {
 public:
+	const float MAX_MAGNITUDE = 5.0f;
+	const float MAX_ARROW_LENGTH = .5f;
+	const float SPACING = .5f;
 	unsigned int xLength, yLength, zLength;
 
 	//particle simulation states
@@ -22,6 +25,8 @@ public:
 		this->yLength = yLength;
 		this->zLength = zLength;
 
+		perlin::initPerlinNoise();
+
 		std::cerr << "Initializing vector field\n"
 			<< "xLength: " << this->xLength << std::endl
 			<< "yLength: " << this->yLength << std::endl
@@ -31,11 +36,13 @@ public:
 		for (int i = 0; i < xLength; i++) {
 			for (int j = 0; j < yLength; j++) {
 				for (int k = 0; k < zLength; k++) {
-					vecPos.push_back(glm::vec3(i*+0.2, j*-0.2, k*-0.2));
+					vecPos.push_back(glm::vec3(i*+SPACING, j*-SPACING, k*-SPACING));
 					vecVector.push_back(glm::vec3(0.5f, 0.5f, 0));
 					vecDraw.push_back(vecPos.back());
 					vecDraw.push_back(-1.0f*vecPos.back());
-					magnitude.push_back(1.0f);
+					//change to sample from particle
+					magnitude.push_back(perlin::noise((float)i / (float)xLength, (float)j / (float)yLength, (float)k / (float)zLength));
+					//std::cout << magnitude.back() << std::endl;
 				}
 			}
 		}
@@ -71,21 +78,25 @@ public:
 
 	float rotationDegrees = .0f;
 	void updateBuffers() {
-		glm::vec4 vectorManip(2.5f, 2.5f, 2.5f, 1);
+		glm::vec3 paticleVelocity(4.f, 4.f, 4.f);
+
+		//map to vector4 for computation
+		glm::vec4 vectorManip(glm::normalize(paticleVelocity), 1);
+
 		glm::mat4 transform = glm::mat4(1.0f);
 		transform = glm::rotate(transform, rotationDegrees += .1f, glm::vec3(0.0f, 0.0f, 1.0f));
+
 		vectorManip = transform * vectorManip;
 
-		glm::vec3 vector(vectorManip);
 		//std::cout << vector[0] << vector[1]<< vector[2] <<std::endl;
 
 		for (unsigned int i = 0; i < vecPos.size(); i++) {
+			glm::vec3 vector(vectorManip);
+			vector = magnitude[i] / MAX_MAGNITUDE * MAX_ARROW_LENGTH * vector;
 
 			//update start and end draw positions
 			vecDraw[i * 2] = vector / 2.0f;
 			vecDraw[i * 2 + 1] = vector / 2.0f - vector;
-			//std::cout << vecDraw[i * 2][0] << vecDraw[i * 2][1] << vecDraw[i * 2][2] << std::endl;
-			//std::cout << vecDraw[i * 2 + 1][0] << vecDraw[i * 2 + 1][1] << vecDraw[i * 2 + 1][2] << std::endl;
 
 			glBindVertexArray(VAO[i]);
 			glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);	// and a different VBO
@@ -118,7 +129,7 @@ public:
 			model = glm::translate(model, vecPos[i]);
 			vecShaders[i]->setMat4("model", model);
 			vecShaders[i]->setMat4("transform", glm::mat4(1.0f));
-			vecShaders[i]->setVec4("ourColor", 1.0f, 0.0f, 0.0f, 1.0f);
+			vecShaders[i]->setVec4("vectorColor", magnitude[i], 0.0f, 1.0f - magnitude[i], 1.0f);
 
 			//unsigned int transformLoc = glGetUniformLocation(vecShaders[i]->ID, "transform");
 			//glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
