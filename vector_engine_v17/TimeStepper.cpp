@@ -3,7 +3,7 @@
 
 void TimeStepper::takeStep(VectorFieldSystem* particleSystem, float stepSize)
 {
-	std::vector<glm::vec3> u0 = particleSystem->getState();
+	std::vector<glm::vec3> &u0 = particleSystem->m_vVecState;
 
 	std::vector<glm::vec3> f0;
 	std::vector<glm::vec3> f1;
@@ -20,27 +20,27 @@ void TimeStepper::takeStep(VectorFieldSystem* particleSystem, float stepSize)
 	f0 = particleSystem->evalF(u0);
 
 
-	for (unsigned i = 0; i < particleSystem->getState().size(); i++) {
+	for (unsigned i = 0; i < u0.size(); i++) {
 		u1.push_back(u0[i] + stepSize * f0[i] / 2.0f);
 	}
 	f1 = particleSystem->evalF(u1);
 
-	for (unsigned i = 0; i < particleSystem->getState().size(); i++) {
+	for (unsigned i = 0; i < u0.size(); i++) {
 		u2.push_back(u0[i] + stepSize * f1[i] / 2.0f);
 	}
 	f2 = particleSystem->evalF(u2);
 
-	for (unsigned i = 0; i < particleSystem->getState().size(); i++) {
+	for (unsigned i = 0; i < u0.size(); i++) {
 		u3.push_back(u0[i] + stepSize * f2[i]);
 	}
 	f3 = particleSystem->evalF(u3);
 
-	for (unsigned i = 0; i < particleSystem->getState().size(); i++) {
+	for (unsigned i = 0; i < u0.size(); i++) {
 		//  Combine to estimate the solution at time T0 + DT.
 		u.push_back(u0[i] + stepSize * (f0[i] + 2.0f * f1[i] + 2.0f * f2[i] + f3[i]) / 6.0f);
 	}
-	std::cout << "u[0].x is now: "<< u[0][0] << std::endl;
-	particleSystem->setState(u);
+	//std::cout << "u[0].x is now: "<< u[0][0] << std::endl;
+	particleSystem->m_vVecState = u;
 }
 
 //{

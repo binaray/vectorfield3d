@@ -126,6 +126,7 @@
     <ClCompile Include="TimeStepper.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.hpp" />
     <ClInclude Include="PerlinNoise.hpp" />
     <ClInclude Include="Shader.hpp" />
     <ClInclude Include="TimeStepper.h" />
