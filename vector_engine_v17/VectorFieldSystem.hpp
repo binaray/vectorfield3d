@@ -19,6 +19,8 @@ public:
 
 	//particle simulation states
 	std::vector<glm::vec3> m_vVecState;
+	unsigned int particleNum;
+	float particleInitialVelocity = 0.2f;
 
 	VectorFieldSystem(unsigned xLength, unsigned yLength, unsigned zLength) {
 		this->xLength = xLength;
@@ -36,8 +38,11 @@ public:
 		for (int i = 0; i < xLength; i++) {
 			for (int j = 0; j < yLength; j++) {
 				for (int k = 0; k < zLength; k++) {
+					//draw position for model matrix
 					vecPos.push_back(glm::vec3(i*+SPACING, j*-SPACING, k*-SPACING));
+					//vector value to represent
 					vecVector.push_back(glm::vec3(0.5f, 0.5f, 0));
+					//vector representation positions relative to draw position
 					vecDraw.push_back(vecPos.back());
 					vecDraw.push_back(-1.0f*vecPos.back());
 					//change to sample from particle
@@ -47,12 +52,13 @@ public:
 			}
 		}
 		
-		//Particles
+		//Particles --initialized position is before the vector field;
+		particleNum = xLength * yLength * zLength;
 		for (int i = 0; i < xLength; i++) {
 			for (int j = 0; j < yLength; j++) {
 				for (int k = 0; k < zLength; k++) {
-					m_vVecState.push_back(glm::vec3(i*+0.2, j*-0.2, k*-0.2));
-					m_vVecState.push_back(glm::vec3(0, 0, 0));
+					m_vVecState.push_back(glm::vec3(i*-0.2, j*-0.2, k*-0.2));
+					m_vVecState.push_back(glm::vec3(particleInitialVelocity, 0, 0));
 				}
 			}
 		}
@@ -67,7 +73,7 @@ public:
 		for (int i = 0; i < xLength; i++) {
 			for (int j = 0; j < yLength; j++) {
 				for (int k = 0; k < zLength; k++) {
-					dX.push_back(glm::vec3(-.2f, 0, 0));
+					dX.push_back(glm::vec3(0.2f, 0, 0));
 					dX.push_back(glm::vec3(0, 0, 0));
 				}
 			}
@@ -121,25 +127,38 @@ public:
 		for (unsigned int i = 0; i < vecPos.size(); i++) {
 			
 			// get matrix's uniform location and set matrix
-			vecShaders[i]->use();
-			vecShaders[i]->setMat4("projection", projection);
-			vecShaders[i]->setMat4("view", view);
+			vecShader->use();
+			vecShader->setMat4("projection", projection);
+			vecShader->setMat4("view", view);
 
 			glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
 			model = glm::translate(model, vecPos[i]);
-			vecShaders[i]->setMat4("model", model);
-			vecShaders[i]->setMat4("transform", glm::mat4(1.0f));
-			vecShaders[i]->setVec4("vectorColor", magnitude[i], 0.0f, 1.0f - magnitude[i], 1.0f);
+			vecShader->setMat4("model", model);
+			vecShader->setMat4("transform", glm::mat4(1.0f));
+			vecShader->setVec4("vectorColor", magnitude[i], 0.0f, 1.0f - magnitude[i], 1.0f);
 
 			//unsigned int transformLoc = glGetUniformLocation(vecShaders[i]->ID, "transform");
 			//glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
-
 			////float greenValue = sin(timeValue) / 2.0f + 0.5f;
 			//int vertexColorLocation = glGetUniformLocation(vecShaders[i]->ID, "ourColor");
 			//glUniform4f(vertexColorLocation, 1.0f, 0.0f, 0.0f, 1.0f);
-
 			glBindVertexArray(VAO[i]);
 			glDrawArrays(GL_LINES, 0, 2);
+
+			//----------------draw particles
+			particleShader->use();
+			particleShader->setMat4("projection", projection);
+			particleShader->setMat4("view", view);
+			model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+			model = glm::translate(model, m_vVecState[i * 2]);
+			particleShader->setMat4("model", model);
+			particleShader->setMat4("transform", glm::mat4(1.0f));
+			particleShader->setVec4("particleColor", 1.0f, 1.0f, 1.0f, 1.0f);
+
+			glBindVertexArray(particleVAO[i]);
+			glDrawArrays(GL_POINTS, 0, 1);
+			//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particleVBO[i]);
+			//glDrawElements(GL_POINT, 3, GL_FLOAT, (void*)0);
 		}
 	}
 
@@ -151,52 +170,57 @@ private:
 	std::vector<float> magnitude;
 
 
-	/*  Render data  */
+	/*  Vector field render data  */
 	unsigned int *VBO;
 	unsigned int *VAO;
-	typedef Shader* ShaderPtr;
-	ShaderPtr *vecShaders;
+	//typedef Shader* ShaderPtr;
+	//ShaderPtr *vecShaders;
+	Shader *vecShader;
+
+	/*  Particle render data  */
+	unsigned int *particleVBO;
+	unsigned int *particleVAO;
+	Shader *particleShader;
 
 	void setupBuffers() {
-		// build and compile our shader program
 		std::cerr << "Initializing shaders\n";
-		vecShaders = new ShaderPtr[vecPos.size()];
-		
+		//vecShaders = new ShaderPtr[vecPos.size()];
+		vecShader = new Shader("shaders/vectorfield.vs", "shaders/vectorfield.fs");
+		particleShader = new Shader("shaders/particle.vs", "shaders/particle.fs");
+
 		std::cerr << "Initializing vector field buffer objects\n";
 		VBO = new unsigned int[vecPos.size()];
 		VAO = new unsigned int[vecPos.size()];
 		
-		std::cout << vecPos.size();
 		glGenVertexArrays(vecPos.size(), VAO);
 		glGenBuffers(vecPos.size(), VBO);
 		for (unsigned int i = 0; i < vecPos.size(); i++) {
 			glBindVertexArray(VAO[i]);
-			glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);	// and a different VBO
-			glBufferData(GL_ARRAY_BUFFER, 2*sizeof(glm::vec3), &vecDraw[i*2], GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);
+			glBufferData(GL_ARRAY_BUFFER, 2*sizeof(glm::vec3), &vecDraw[i*2], GL_DYNAMIC_DRAW);	//2 points
 
-			//single vector point so 1 vertex for now
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0); // because the vertex data is tightly packed we can also specify 0 as the vertex attribute's stride to let OpenGL figure it out
+			//(GLindex, size, type, stride, starting pointer)
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0); // because the vertex data is tightly packed we can also specify 0 as the vertex attribute's stride to let OpenGL figure it out
 			//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
 			glEnableVertexAttribArray(0);
 
-			vecShaders[i] = new Shader("shaders/vectorfield.vs", "shaders/vectorfield.fs");
 		}
 
 		//std::cerr << "Initializing particle buffer objects\n";
-		//VBO = new unsigned int[vecPos.size()];
-		//VAO = new unsigned int[vecPos.size()];
+		particleVBO = new unsigned int[vecPos.size()];
+		particleVAO = new unsigned int[vecPos.size()];
 
-		//for (unsigned int i = 0; i < vecPos.size(); i++) {
-		//	glGenVertexArrays(1, &VAO[i]);
-		//	glGenBuffers(1, &VBO[i]);
-		//	glBindVertexArray(VAO[i]);
-		//	glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);	// and a different VBO
-		//	glBufferData(GL_ARRAY_BUFFER, m_vVecState.size() / 2 * sizeof(glm::vec3), &m_vVecState[0], GL_DYNAMIC_DRAW);
+		glGenVertexArrays(vecPos.size(), particleVAO);
+		glGenBuffers(vecPos.size(), particleVBO);
+		for (unsigned int i = 0; i < vecPos.size(); i++) {
+			glBindVertexArray(particleVAO[i]);
+			glBindBuffer(GL_ARRAY_BUFFER, particleVBO[i]);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), &m_vVecState[i*2], GL_DYNAMIC_DRAW);	//single point only
 
-		//	//single vector point so 1 vertex
-		//	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3), (void*)0); // because the vertex data is tightly packed we can also specify 0 as the vertex attribute's stride to let OpenGL figure it out
-		//	glEnableVertexAttribArray(0);
-		//}
+			//(GLindex, size, type, stride, starting pointer) --stride unused since single point for now
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3) * 2, (void*)0);
+			glEnableVertexAttribArray(0);			
+		}
 	}
 };
 
