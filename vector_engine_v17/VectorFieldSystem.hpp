@@ -15,10 +15,13 @@ public:
 	const float MAX_MAGNITUDE = 5.0f;
 	const float MAX_ARROW_LENGTH = .5f;
 	const float SPACING = .5f;
+	const float PARTICLE_OFFSET = .2f;
 	unsigned int xLength, yLength, zLength;
 
 	//particle simulation states
 	std::vector<glm::vec3> m_vVecState;
+	std::vector<unsigned int> ttl;
+
 	unsigned int particleNum;
 	float particleInitialVelocity = 0.2f;
 
@@ -57,7 +60,7 @@ public:
 		for (int i = 0; i < xLength; i++) {
 			for (int j = 0; j < yLength; j++) {
 				for (int k = 0; k < zLength; k++) {
-					m_vVecState.push_back(glm::vec3(i*-0.2, j*-0.2, k*-0.2));
+					m_vVecState.push_back(glm::vec3(i*-PARTICLE_OFFSET, -0.1 + j*-PARTICLE_OFFSET, -0.1 + k*-PARTICLE_OFFSET));
 					m_vVecState.push_back(glm::vec3(particleInitialVelocity, 0, 0));
 				}
 			}
@@ -70,13 +73,58 @@ public:
 	std::vector<glm::vec3> evalF(std::vector <glm::vec3> state) {
 		//calculate forces from velocity and acceleration
 		std::vector <glm::vec3> dX;
-		for (int i = 0; i < xLength; i++) {
-			for (int j = 0; j < yLength; j++) {
-				for (int k = 0; k < zLength; k++) {
-					dX.push_back(glm::vec3(0.2f, 0, 0));
-					dX.push_back(glm::vec3(0, 0, 0));
-				}
+
+		//for (int i = 0; i < xLength; i++) {
+		//	for (int j = 0; j < yLength; j++) {
+		//		for (int k = 0; k < zLength; k++) {
+		//			dX.push_back(glm::vec3(0.2f, 0, 0));
+		//			dX.push_back(glm::vec3(0, 0, 0));
+		//		}
+		//	}
+		//}
+
+		//glm::vec3 acceleration = glm::vec3(.0f, .0f, .0f);
+		//if (m_vVecState[0].x >= float(xLength * SPACING) || m_vVecState[0].y <= float((yLength - 1) * -SPACING) || m_vVecState[0].y >= .0f || m_vVecState[0].z <= float((zLength - 1) * -SPACING) || m_vVecState[0].z >= 0.0f) {
+		//	m_vVecState[0] = glm::vec3(0.0f, -1.0, -1.0);
+		//	m_vVecState[1] = glm::vec3(particleInitialVelocity, 0, 0);
+		//}
+		//else {
+		//	//haxx check
+		//	//since x, y, z is bounded, we can safely convert coordinates to vector field memory space
+		//	int x = m_vVecState[0].x / SPACING;
+		//	int y = -m_vVecState[0].y / SPACING;	//positive space of y and z not used
+		//	int z = -m_vVecState[0].z / SPACING;
+
+		//	//acceleration = vecVector[x * y * zLength + z];
+		//	std::cout << x<<" "<<y << " " << z << std::endl;
+		//}
+		//dX.push_back(m_vVecState[1]);
+		//dX.push_back(acceleration);
+
+		for (int i = 0; i < vecPos.size(); i++) {
+			glm::vec3 acceleration = glm::vec3(.0f, .0f, .0f);
+			//Vector field to particle interaction
+			//reset condition
+			if (m_vVecState[i * 2].x >= float(xLength * SPACING) || m_vVecState[i * 2].y <= float((yLength-1) * -SPACING) || m_vVecState[i * 2].y >= .0f || m_vVecState[i * 2].z <= float((zLength-1) * -SPACING) || m_vVecState[i * 2].z >= 0.0f) {
+				int jk = i % (zLength * yLength);	//cross section
+				int k = jk % yLength;
+				int j = jk / zLength;
+				m_vVecState[i * 2 + 1] = glm::vec3(particleInitialVelocity, 0, 0);
+				m_vVecState[i * 2] = glm::vec3(0.0f, -0.1 + j * -PARTICLE_OFFSET, -0.1 + k * -PARTICLE_OFFSET);
+				acceleration = glm::vec3(.0f, .0f, .0f);
 			}
+			else if (m_vVecState[i * 2].x > 0.0f) {
+				//haxx check
+				//since x, y, z is bounded, we can safely convert coordinates to vector field memory space
+				int x = m_vVecState[i * 2].x / SPACING;
+				int y = -m_vVecState[i * 2].y / SPACING;	//positive space of y and z not used
+				int z = -m_vVecState[i * 2].z / SPACING;
+
+				acceleration = vecVector[x * yLength + y * zLength + z];
+				//std::cout << acceleration.x << std::endl;
+			}
+			dX.push_back(m_vVecState[i * 2 + 1]);
+			dX.push_back(acceleration);
 		}
 
 		return dX;
@@ -84,21 +132,25 @@ public:
 
 	float rotationDegrees = .0f;
 	void updateBuffers() {
-		glm::vec3 paticleVelocity(4.f, 4.f, 4.f);
+		//particle to vector interaction
+		glm::vec3 paticleVelocity(4.f, 0, 0);
 
-		//map to vector4 for computation
-		glm::vec4 vectorManip(glm::normalize(paticleVelocity), 1);
 
-		glm::mat4 transform = glm::mat4(1.0f);
-		transform = glm::rotate(transform, rotationDegrees += .1f, glm::vec3(0.0f, 0.0f, 1.0f));
-
-		vectorManip = transform * vectorManip;
 
 		//std::cout << vector[0] << vector[1]<< vector[2] <<std::endl;
 
 		for (unsigned int i = 0; i < vecPos.size(); i++) {
+			//map to vector4 for computation
+			glm::vec4 vectorManip(glm::normalize(paticleVelocity), 1);
+			
+			glm::mat4 transform = glm::mat4(1.0f);
+			transform = glm::rotate(transform, rotationDegrees = i*1.8f, glm::vec3(0.0f, 0.0f, 1.0f));
+
+			vectorManip = transform * vectorManip;
+
 			glm::vec3 vector(vectorManip);
 			vector = magnitude[i] / MAX_MAGNITUDE * MAX_ARROW_LENGTH * vector;
+			vecVector[i] = vector;
 
 			//update start and end draw positions
 			vecDraw[i * 2] = vector / 2.0f;
@@ -106,12 +158,13 @@ public:
 
 			glBindVertexArray(VAO[i]);
 			glBindBuffer(GL_ARRAY_BUFFER, VBO[i]);	// and a different VBO
-			glBufferData(GL_ARRAY_BUFFER, 2 * sizeof(glm::vec3), &vecDraw[i * 2], GL_DYNAMIC_DRAW);
+			//glBufferData(GL_ARRAY_BUFFER, 2 * sizeof(glm::vec3), &vecDraw[i * 2], GL_DYNAMIC_DRAW);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * sizeof(glm::vec3), &vecDraw[i * 2]);
 
-			//single vertex point = (x,y.z)
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+			//OpenGL3.3++: VAOs store vertex attributes so redeclaration is not needed
 			//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
-			glEnableVertexAttribArray(0);
+			//glEnableVertexAttribArray(0);
+
 		}
 	}
 
@@ -133,7 +186,7 @@ public:
 
 			glm::mat4 model = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
 			model = glm::translate(model, vecPos[i]);
-			vecShader->setMat4("model", model);
+			vecShader->setMat4("model", model);	//TODO: change to attribute since permanent
 			vecShader->setMat4("transform", glm::mat4(1.0f));
 			vecShader->setVec4("vectorColor", magnitude[i], 0.0f, 1.0f - magnitude[i], 1.0f);
 

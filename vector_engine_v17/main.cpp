@@ -32,7 +32,7 @@ bool firstMouse = true;
 //setup shaders, buffers, meshes here
 void setupSystems() {
 	timeStepper = new TimeStepper();
-	vectorFieldSystem = new VectorFieldSystem(5, 5, 5);
+	vectorFieldSystem = new VectorFieldSystem(8, 3, 8);
 }
 
 //update logic here
