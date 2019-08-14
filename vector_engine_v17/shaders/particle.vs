@@ -11,5 +11,5 @@ uniform mat4 transform;
 void main()
 {
 	gl_Position = transform * projection * view * model * vec4(aPos, 1.0);
-	gl_PointSize = float(1.0);
+	gl_PointSize = float(2);
 }
