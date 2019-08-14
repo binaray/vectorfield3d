@@ -8,6 +8,7 @@
 #include "TimeStepper.h"
 #include "Camera.hpp"
 
+GLFWwindow* window;
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -33,12 +34,57 @@ bool firstMouse = true;
 void setupSystems() {
 	timeStepper = new TimeStepper();
 	vectorFieldSystem = new VectorFieldSystem(8, 3, 8);
+	//vectorFieldSystem = new VectorFieldSystem(0);
+}
+
+//game events here
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+	{
+		std::cout << "1 called" << std::endl;
+		vectorFieldSystem->rotateVector(0);
+	}
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+	{
+		std::cout << "2 called" << std::endl;
+		vectorFieldSystem->rotateVector(1);
+	}
+	if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+	{
+		std::cout << "3 called" << std::endl;
+		vectorFieldSystem->rotateVector(2);
+	}
+	if (key == GLFW_KEY_0 && action == GLFW_PRESS)
+	{
+		std::cout << "0 called" << std::endl;
+	}
+	if (key == GLFW_KEY_G && action == GLFW_PRESS)
+	{
+		std::cout << "============Game mode started========>" << std::endl;
+		VectorFieldSystem* tmp = new VectorFieldSystem(0);
+		delete vectorFieldSystem;
+		vectorFieldSystem = tmp;
+		glfwSetKeyCallback(window, key_callback);
+	}
+}
+
+void victoryCallback() {
+	if (vectorFieldSystem->isVictorious) {
+		std::cout << "!!============!!-VICTORY-!!========!!" << std::endl;
+		std::cout << "********** Level " << ++vectorFieldSystem->difficulty << " started! **********" << std::endl;
+		VectorFieldSystem* tmp = new VectorFieldSystem(vectorFieldSystem->difficulty);
+		delete vectorFieldSystem;
+		vectorFieldSystem = tmp;
+		glfwSetKeyCallback(window, key_callback);
+	}
 }
 
 //update logic here
 void timerFunction() {
 	timeStepper->takeStep(vectorFieldSystem, step);
-	//vectorFieldSystem->updateBuffers();
+	victoryCallback();
+	vectorFieldSystem->updateBuffers();
 }
 
 //draw code here
@@ -65,7 +111,7 @@ int main()
 #endif
 
 	// glfw window creation
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OpenGLApplication", NULL, NULL);
+	window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "OpenGLApplication", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -76,6 +122,7 @@ int main()
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetKeyCallback(window, key_callback);
 
 	// tell GLFW to capture our mouse
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
