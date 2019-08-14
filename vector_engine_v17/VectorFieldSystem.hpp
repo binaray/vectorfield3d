@@ -13,9 +13,9 @@ class VectorFieldSystem
 {
 public:
 	const float MAX_MAGNITUDE = 5.0f;
-	const float MAX_ARROW_LENGTH = .5f;
-	const float SPACING = .5f;
-	const float PARTICLE_OFFSET = .2f;
+	const float MAX_ARROW_LENGTH = .25f;
+	const float SPACING = 1.f;
+	const float PARTICLE_OFFSET = .5f;
 	unsigned int xLength, yLength, zLength;
 
 	//particle simulation states
@@ -30,32 +30,42 @@ public:
 		this->yLength = yLength;
 		this->zLength = zLength;
 
-		perlin::initPerlinNoise();
+		perlin::initPerlinNoise(241);
 
 		std::cerr << "Initializing vector field\n"
 			<< "xLength: " << this->xLength << std::endl
 			<< "yLength: " << this->yLength << std::endl
 			<< "zLength: " << this->zLength << std::endl;
 
-		//Vector Field
+		//---------------Vector Field-----------------
+
 		for (int i = 0; i < xLength; i++) {
 			for (int j = 0; j < yLength; j++) {
 				for (int k = 0; k < zLength; k++) {
-					//draw position for model matrix
+					glm::vec3 vector = glm::normalize(glm::vec3(0.5f,0,0));	//default unit vector
+					float mag = 2.0f * perlin::noise((float)i / (float)xLength, (float)j / (float)yLength, (float)k / (float)zLength);	//default magnitude
+
+					if (i > xLength/2) {
+						vector = glm::normalize(glm::vec3(-1.f, 0, 0));
+						mag = 4.f;
+					}
+
+
+					//store draw position for model matrix; unit vector value; magnitude respectively
 					vecPos.push_back(glm::vec3((i * +SPACING) + SPACING / 2.0f, (j * -SPACING) - SPACING / 2.0f, (k * -SPACING) - SPACING / 2.0f));
-					//vector value to represent
-					vecVector.push_back(glm::vec3(0.5f, 0.5f, 0));
+					vecVector.push_back(vector);
+					magnitude.push_back(mag);
+
+					//change to reflect draw size
+					vector = mag / MAX_MAGNITUDE * MAX_ARROW_LENGTH * vector;
 					//vector representation positions relative to draw position
-					vecDraw.push_back(vecPos.back());
-					vecDraw.push_back(-1.0f*vecPos.back());
-					//change to sample from particle
-					magnitude.push_back(perlin::noise((float)i / (float)xLength, (float)j / (float)yLength, (float)k / (float)zLength));
-					//std::cout << magnitude.back() << std::endl;
+					vecDraw.push_back(vector / 2.0f);
+					vecDraw.push_back(vector / 2.0f - vector);
 				}
 			}
 		}
 		
-		//Particles --initialized position is before the vector field;
+		//-----------Particles --initialized position is before the vector field--------
 		particleNum = xLength * yLength * zLength;
 		for (int i = 0; i < xLength; i++) {
 			for (int j = 0; j < yLength; j++) {
@@ -70,12 +80,14 @@ public:
 		std::cerr << "Initialized\n";
 	}
 
+	//---------------------------------check and compute effector result----------------------------
 	std::vector<glm::vec3> evalF(std::vector <glm::vec3> state) {
 		//calculate forces from velocity and acceleration
 		std::vector <glm::vec3> dX;
-
+		//std::cout << m_vVecState[24].x<<std::endl;
 		for (int i = 0; i < vecPos.size(); i++) {
 			glm::vec3 acceleration = glm::vec3(.0f, .0f, .0f);
+			
 			//Vector field to particle interaction
 			//reset condition
 			if (m_vVecState[i * 2].x >= float(xLength * SPACING) || m_vVecState[i * 2].y <= float((yLength-1) * -SPACING) || m_vVecState[i * 2].y >= .0f || m_vVecState[i * 2].z <= float((zLength-1) * -SPACING) || m_vVecState[i * 2].z >= 0.0f) {
@@ -93,7 +105,13 @@ public:
 				int y = -m_vVecState[i * 2].y / SPACING;	//positive space of y and z not used
 				int z = -m_vVecState[i * 2].z / SPACING;
 
-				acceleration = vecVector[x * yLength + y * zLength + z];
+
+				unsigned int index = x * yLength * zLength + y * zLength + z;
+				/*
+				std::cout << x << std::endl;
+				std::cout << index << std::endl;*/
+				
+				acceleration = magnitude[index] * vecVector[index];
 				//std::cout << acceleration.x << std::endl;
 			}
 			dX.push_back(m_vVecState[i * 2 + 1]);
@@ -104,13 +122,10 @@ public:
 	}
 
 	float rotationDegrees = .0f;
+	//---------------------------set vector effectors: magnitude and direction here----------------
 	void updateBuffers() {
 		//particle to vector interaction
 		glm::vec3 paticleVelocity(4.f, 0, 0);
-
-
-
-		//std::cout << vector[0] << vector[1]<< vector[2] <<std::endl;
 
 		for (unsigned int i = 0; i < vecPos.size(); i++) {
 			//map to vector4 for computation

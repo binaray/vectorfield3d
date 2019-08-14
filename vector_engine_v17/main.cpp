@@ -38,7 +38,7 @@ void setupSystems() {
 //update logic here
 void timerFunction() {
 	timeStepper->takeStep(vectorFieldSystem, step);
-	vectorFieldSystem->updateBuffers();
+	//vectorFieldSystem->updateBuffers();
 }
 
 //draw code here
