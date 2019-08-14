@@ -42,7 +42,7 @@ public:
 			for (int j = 0; j < yLength; j++) {
 				for (int k = 0; k < zLength; k++) {
 					//draw position for model matrix
-					vecPos.push_back(glm::vec3(i*+SPACING, j*-SPACING, k*-SPACING));
+					vecPos.push_back(glm::vec3((i * +SPACING) + SPACING / 2.0f, (j * -SPACING) - SPACING / 2.0f, (k * -SPACING) - SPACING / 2.0f));
 					//vector value to represent
 					vecVector.push_back(glm::vec3(0.5f, 0.5f, 0));
 					//vector representation positions relative to draw position
@@ -73,33 +73,6 @@ public:
 	std::vector<glm::vec3> evalF(std::vector <glm::vec3> state) {
 		//calculate forces from velocity and acceleration
 		std::vector <glm::vec3> dX;
-
-		//for (int i = 0; i < xLength; i++) {
-		//	for (int j = 0; j < yLength; j++) {
-		//		for (int k = 0; k < zLength; k++) {
-		//			dX.push_back(glm::vec3(0.2f, 0, 0));
-		//			dX.push_back(glm::vec3(0, 0, 0));
-		//		}
-		//	}
-		//}
-
-		//glm::vec3 acceleration = glm::vec3(.0f, .0f, .0f);
-		//if (m_vVecState[0].x >= float(xLength * SPACING) || m_vVecState[0].y <= float((yLength - 1) * -SPACING) || m_vVecState[0].y >= .0f || m_vVecState[0].z <= float((zLength - 1) * -SPACING) || m_vVecState[0].z >= 0.0f) {
-		//	m_vVecState[0] = glm::vec3(0.0f, -1.0, -1.0);
-		//	m_vVecState[1] = glm::vec3(particleInitialVelocity, 0, 0);
-		//}
-		//else {
-		//	//haxx check
-		//	//since x, y, z is bounded, we can safely convert coordinates to vector field memory space
-		//	int x = m_vVecState[0].x / SPACING;
-		//	int y = -m_vVecState[0].y / SPACING;	//positive space of y and z not used
-		//	int z = -m_vVecState[0].z / SPACING;
-
-		//	//acceleration = vecVector[x * y * zLength + z];
-		//	std::cout << x<<" "<<y << " " << z << std::endl;
-		//}
-		//dX.push_back(m_vVecState[1]);
-		//dX.push_back(acceleration);
 
 		for (int i = 0; i < vecPos.size(); i++) {
 			glm::vec3 acceleration = glm::vec3(.0f, .0f, .0f);
