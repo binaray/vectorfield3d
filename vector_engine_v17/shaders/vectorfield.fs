@@ -20,7 +20,7 @@ float drawLine(vec2 p1, vec2 p2) {
   // median to (p1, p2) vector
   float h = 2 / c * sqrt( p * ( p - a) * ( p - b) * ( p - c));
 
-  return mix(1.0, 0.0, smoothstep(0.5 * Thickness, 1.5 * Thickness, h));
+  return mix(vectorColor.x, 0.0, smoothstep(0.5 * Thickness, 1.5 * Thickness, h));
 }
 
 void main()

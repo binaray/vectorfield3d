@@ -194,7 +194,7 @@ public:
 			model = glm::translate(model, m_vVecState[i * 2]);
 			particleShader->setMat4("model", model);
 			particleShader->setMat4("transform", glm::mat4(1.0f));
-			particleShader->setVec4("particleColor", 1.0f, 0.0f, 0.0f, 1.0f);
+			particleShader->setVec4("particleColor", 0.7f, 0.0f, 0.0f, 1.0f);
 
 			glBindVertexArray(particleVAO[i]);
 			glDrawArrays(GL_POINTS, 0, 1);
