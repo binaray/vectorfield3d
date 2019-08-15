@@ -102,6 +102,41 @@ public:
 
 		switch (difficulty)
 		{
+
+		case 3:
+			perlin::initPerlinNoise(4);
+			xLength = 5;
+			yLength = 5;
+			zLength = 5;
+			startIndex = dimen3ToIndex(0, 1, 0);
+			endIndex = dimen3ToIndex(4, 2, 0);
+
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(0, 1, 0));
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(3, 0, 0));
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(3, 1, 0));
+			break;
+		case 2:
+			perlin::initPerlinNoise(50);
+			xLength = 5;
+			yLength = 5;
+			zLength = 5;
+			startIndex = dimen3ToIndex(2, 2, 2);
+			endIndex = dimen3ToIndex(0, 0, 0);
+
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(2, 2, 2));
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(2, 0, 2));
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(2, 1, 2));
+			manipType.push_back(1);
+			manipIndex.push_back(dimen3ToIndex(1, 1, 2));
+			manipType.push_back(2);
+			manipIndex.push_back(dimen3ToIndex(0, 1, 2));
+			break;
 		case 1:
 			perlin::initPerlinNoise(41);
 			xLength = 5;

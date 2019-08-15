@@ -210,6 +210,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		vectorFieldSystem = tmp;
 		glfwSetKeyCallback(window, key_callback);
 	}
+	if (key == GLFW_KEY_R && action == GLFW_PRESS)
+	{
+		std::cout << "============System Reset=========" << std::endl;
+		VectorFieldSystem* tmp = new VectorFieldSystem(8, 3, 8);
+		delete vectorFieldSystem;
+		vectorFieldSystem = tmp;
+		glfwSetKeyCallback(window, key_callback);
+	}
 }
 
 void victoryCallback() {
