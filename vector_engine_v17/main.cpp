@@ -198,6 +198,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		std::cout << "3 called" << std::endl;
 		vectorFieldSystem->rotateVector(2);
 	}
+	if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+	{
+		std::cout << "4 called" << std::endl;
+		vectorFieldSystem->rotateVector(3);
+	}
+	if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+	{
+		std::cout << "5 called" << std::endl;
+		vectorFieldSystem->rotateVector(4);
+	}
 	if (key == GLFW_KEY_0 && action == GLFW_PRESS)
 	{
 		std::cout << "0 called" << std::endl;
