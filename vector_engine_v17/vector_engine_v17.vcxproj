@@ -130,7 +130,6 @@
     <ClInclude Include="PerlinNoise.hpp" />
     <ClInclude Include="Shader.hpp" />
     <ClInclude Include="TimeStepper.h" />
-    <ClInclude Include="tuple.h" />
     <ClInclude Include="VectorFieldSystem.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

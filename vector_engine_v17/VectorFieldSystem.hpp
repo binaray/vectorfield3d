@@ -5,7 +5,6 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "tuple.h"
 
 #include "Shader.hpp"
 #include "PerlinNoise.hpp"
@@ -18,6 +17,7 @@ public:
 	const float SPACING = 1.f;
 	const float PARTICLE_OFFSET = .5f;
 	unsigned int xLength, yLength, zLength;
+	glm::vec3 vecfield_offset;
 
 	//particle simulation states
 	std::vector<glm::vec3> m_vVecState;
@@ -27,11 +27,11 @@ public:
 	float particleInitialVelocity = 0.2f;
 
 	//-----game vars
-	typedef tuple< unsigned, 3 > Tuple3u;
 	int difficulty = -1;
 	bool isVictorious = false;
 	int startIndex = 0;	//x,y,z index with respect to field system
 	int endIndex = 0;
+	glm::vec3 gameParticleVelocity = glm::vec3(-0.1f, 0.f, 0.f);
 
 	std::vector<int> manipType;	//0- rotates on xy plane; 1- rotates on xz plane; 2-rotates on yz plane 
 	std::vector<int> manipIndex;
@@ -95,24 +95,42 @@ public:
 		return x * yLength * zLength + y * zLength + z;
 	}
 
+	//------------------game constructor---------------
 	VectorFieldSystem(int difficulty) {
 		this->difficulty = difficulty;
+		vecfield_offset = glm::vec3(SPACING, -SPACING, -SPACING);
+
 		switch (difficulty)
 		{
 		case 1:
+			perlin::initPerlinNoise(41);
+			xLength = 5;
+			yLength = 5;
+			zLength = 2;
+			startIndex = dimen3ToIndex(0, 1, 0);
+			endIndex = dimen3ToIndex(4, 2, 0);
+
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(0, 1, 0));
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(3, 0, 0));
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(3, 1, 0));
+			break;
 		case 0:
 		default:
+			this->difficulty = difficulty;
 			perlin::initPerlinNoise(241);
 			xLength = 5;
 			yLength = 5;
-			zLength = 5;
+			zLength = 2;
 			startIndex = dimen3ToIndex(0, 0, 0);
 			endIndex = dimen3ToIndex(4, 0, 0);
 
 			manipType.push_back(0);
 			manipIndex.push_back(dimen3ToIndex(0, 0, 0));
-			manipType.push_back(1);
-			manipIndex.push_back(dimen3ToIndex(3, 0, 0));
+			manipType.push_back(0);
+			manipIndex.push_back(dimen3ToIndex(2, 0, 0));
 			break;
 		}
 		std::cout << "Starting stage " << difficulty << std::endl;
@@ -132,8 +150,8 @@ public:
 					//change to reflect draw size
 					vector = mag / MAX_MAGNITUDE * MAX_ARROW_LENGTH * vector;
 					//vector representation positions relative to draw position
-					vecDraw.push_back(vector / 2.0f);
-					vecDraw.push_back(vector / 2.0f - vector);
+					vecDraw.push_back(vector / 2.0f + vecfield_offset);
+					vecDraw.push_back(vector / 2.0f - vector + vecfield_offset);
 				}
 			}
 		}
@@ -156,13 +174,13 @@ public:
 			magnitude[index] = mag;
 
 			vector = mag / MAX_MAGNITUDE * MAX_ARROW_LENGTH * vector;
-			vecDraw[index] = vector / 2.0f;
-			vecDraw[index+1] = vector / 2.0f - vector;
+			vecDraw[index*2] = vector / 2.0f + vecfield_offset;
+			vecDraw[index*2+1] = vector / 2.0f - vector + vecfield_offset;
 		}
 
 		particleNum = 1;
 		m_vVecState.push_back(vecPos[startIndex]);
-		m_vVecState.push_back(glm::vec3(particleInitialVelocity, 0, 0));
+		m_vVecState.push_back(gameParticleVelocity);
 
 		setupBuffers();
 	}
@@ -188,8 +206,14 @@ public:
 				int jk = i % (zLength * yLength);	//cross section
 				int k = jk % yLength;
 				int j = jk / zLength;
-				m_vVecState[i * 2 + 1] = glm::vec3(particleInitialVelocity, 0, 0);
-				m_vVecState[i * 2] = glm::vec3(0.0f, -0.1 + j * -PARTICLE_OFFSET, -0.1 + k * -PARTICLE_OFFSET);
+				if (difficulty > -1) {
+					m_vVecState[i * 2] = vecPos[startIndex];
+					m_vVecState[i * 2 + 1] = gameParticleVelocity;
+				}
+				else {
+					m_vVecState[i * 2] = glm::vec3(0.0f, -0.1 + j * -PARTICLE_OFFSET, -0.1 + k * -PARTICLE_OFFSET);
+					m_vVecState[i * 2 + 1] = glm::vec3(particleInitialVelocity, 0, 0);
+				}
 				acceleration = glm::vec3(.0f, .0f, .0f);
 			}
 			else if (m_vVecState[i * 2].x > 0.0f) {
@@ -260,10 +284,11 @@ public:
 			glm::vec3 vector(vectorManip);
 			vector = MAX_ARROW_LENGTH * vector;
 			vecVector[endIndex] = vector;
+			magnitude[endIndex] = 10.f;
 
 			//update start and end draw positions
-			vecDraw[endIndex * 2] = vector / 2.0f;
-			vecDraw[endIndex * 2 + 1] = vector / 2.0f - vector;
+			vecDraw[endIndex * 2] = vector / 2.0f + vecfield_offset;
+			vecDraw[endIndex * 2 + 1] = vector / 2.0f - vector + vecfield_offset;
 
 			glBindVertexArray(VAO[endIndex]);
 			glBindBuffer(GL_ARRAY_BUFFER, VBO[endIndex]);	// and a different VBO
@@ -297,8 +322,8 @@ public:
 			magnitude[index] = mag;
 
 			vector = mag / MAX_MAGNITUDE * MAX_ARROW_LENGTH * vector;
-			vecDraw[index*2] = vector / 2.0f;
-			vecDraw[index*2 + 1] = vector / 2.0f - vector;
+			vecDraw[index*2] = vector / 2.0f + vecfield_offset;
+			vecDraw[index*2 + 1] = vector / 2.0f - vector + vecfield_offset;
 
 			glBindVertexArray(VAO[index]);
 			glBindBuffer(GL_ARRAY_BUFFER, VBO[index]);	// and a different VBO
@@ -348,7 +373,7 @@ public:
 			model = glm::translate(model, m_vVecState[i * 2]);
 			particleShader->setMat4("model", model);
 			particleShader->setMat4("transform", glm::mat4(1.0f));
-			particleShader->setVec4("particleColor", 0.7f, 0.0f, 0.0f, 1.0f);
+			particleShader->setVec4("particleColor", 1.0f, 0.0f, 0.0f, 1.0f);
 
 			glBindVertexArray(particleVAO[i]);
 			glDrawArrays(GL_POINTS, 0, 1);
